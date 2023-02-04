@@ -9,7 +9,7 @@ from scores import get_score_func
 from scipy import stats
 from pycls.models.nas.nas import Cell
 from utils import add_dropout, init_network
-import score.net_score
+from score import net_score
 
 parser = argparse.ArgumentParser(description='NAS Without Training')
 parser.add_argument('--data_loc', default='../cifardata/', type=str, help='dataset folder')
@@ -90,9 +90,9 @@ scores_gu = []
 arches = np.random.randint(0, 15625, 100)
 for arch in arches:
     uid = searchspace[arch]
-    network = searchspace.get_net(uid)
-    score_nas.append(score_.score_nas(network, train_loader, device, args))
-    score_gu.append(score_.score_gu(network, train_loader, device, args))
+    network = searchspace.get_network(uid)
+    scores_nas.append(net_score.score_nas(network, train_loader, device, args))
+    scores_gu.append(net_score.score_gu(network, train_loader, device, args))
 
 scores_nas = np.array(scores_nas)
 scores_gu = np.array(scores_gu)
@@ -104,7 +104,7 @@ means = {"nas": calmean(scores_nas), "gu": calmean(scores_gu)}
 for i, (uid, network) in enumerate(searchspace):
     # Reproducibility
     try:
-        scores[i] = net_score.socres(network, train_loader, device, stds, means, args)
+        scores[i] = net_score.scores(network, train_loader, device, stds, means, args)
         accs[i] = searchspace.get_final_accuracy(uid, acc_type, args.trainval)
         accs_ = accs[~np.isnan(scores)]
         scores_ = scores[~np.isnan(scores)]
