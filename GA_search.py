@@ -11,16 +11,18 @@ from tqdm import trange
 from statistics import mean
 import time
 from utils import add_dropout
+from search import GA
+from score import net_score
 
 
 parser = argparse.ArgumentParser(description='NAS Without Training')
 
-parset.add_argument('--maxn_pop', default=20, type=int, help='number of population')
-parset.add_argument('--maxn_iter', default=50, type=int, help='number of iteration')
-parset.add_argument('--prob_mut', default=0.08, type=float, help='probability of mutation')
+parser.add_argument('--maxn_pop', default=20, type=int, help='number of population')
+parser.add_argument('--maxn_iter', default=50, type=int, help='number of iteration')
+parser.add_argument('--prob_mut', default=0.08, type=float, help='probability of mutation')
 
 parser.add_argument('--data_loc', default='../cifardata/', type=str, help='dataset folder')
-parser.add_argument('--api_loc', default='../NAS-Bench-201-v1_0-e61699.pth',
+parser.add_argument('--api_loc', default='../NAS-Bench-201.pth',
                     type=str, help='path to API')
 parser.add_argument('--save_loc', default='results/ICML', type=str, help='folder to save results')
 parser.add_argument('--save_string', default='naswot', type=str, help='prefix of results file')
@@ -77,15 +79,30 @@ else:
     acc_type = 'x-test'
     val_acc_type = 'x-valid'
 
+scores_nas = []
+scores_gu = []
+arches = np.random.randint(0, 15625, 100)
+for arch in arches:
+    uid = searchspace[arch]
+    network = searchspace.get_network(uid)
+    scores_nas.append(net_score.score_nas(network, train_loader, device, args))
+    scores_gu.append(net_score.score_gu(network, train_loader, device, args))
+
+scores_nas = np.array(scores_nas)
+scores_gu = np.array(scores_gu)
+calstd = lambda x: np.ma.masked_invalid(x).std()
+calmean = lambda x: np.ma.masked_invalid(x).mean()
+stds = {"nas": calstd(scores_nas), "gu": calstd(scores_gu)}
+means = {"nas": calmean(scores_nas), "gu": calmean(scores_gu)}
 
 runs = trange(args.n_runs, desc='acc: ')
 for N in runs:
     start = time.time()
     # nas-bench-201 spec
-    sol = search.GA(6, 5, searchspace, device, stds, means, acc_type, args)
-    score, uid, acc_ = sol.find_best()
+    sol = GA.GA(6, 5, searchspace, train_loader, device, stds, means, acc_type, args)
+    score, acc_, uid = sol.find_best()
     chosen.append(uid)
-    topscore.append(score)
+    topscores.append(score)
     acc.append(acc_)
 
     if not args.dataset == 'cifar10' or args.trainval:
@@ -93,7 +110,7 @@ for N in runs:
     #    val_acc.append(info.get_metrics(dset, val_acc_type)['accuracy'])
 
     times.append(time.time()-start)
-    runs.set_description(f"acc: {mean(acc):.2f}% time:{mean(times):.2f}")
+    runs.set_description(f"acc: {mean(acc):.2f}%  score:{mean(topscores):.2f}  time:{mean(times):.2f}")
 
 print(f"Final mean test accuracy: {np.mean(acc)}")
 #if len(val_acc) > 1:
