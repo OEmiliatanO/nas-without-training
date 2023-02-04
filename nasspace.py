@@ -141,6 +141,8 @@ class Nasbench201:
         child_arch.nodes[node_id] = tuple( node_info )
         arch_index = self.api.query_index_by_arch( child_arch )
         return arch_index
+    def query_index_by_arch(self, arch):
+        return self.api.query_index_by_arch(arch)
 
 class Nasbench101:
     def __init__(self, dataset, apiloc, args):
