@@ -1,5 +1,31 @@
 import numpy as np
 import torch
+import random
+from torch.autograd import Variable
+
+def hooklogdet(K, labels=None):
+    s, ld = np.linalg.slogdet(K)
+    return ld
+
+def random_score(jacob, label=None):
+    return np.random.normal()
+
+
+_scores = {
+        'hook_logdet': hooklogdet,
+        'random': random_score
+        }
+
+def get_score_func(score_name):
+    return _scores[score_name]
+
+def get_batch_jacobian(net, x, target, device, args=None):
+    net.zero_grad()
+    x.requires_grad_(True)
+    y, out = net(x)
+    y.backward(torch.ones_like(y))
+    jacob = x.grad.detach()
+    return jacob, target.detach(), y.detach(), out.detach()
 
 def score_nas(network, train_loader, device, args):
     try:
@@ -58,14 +84,17 @@ def score_nas(network, train_loader, device, args):
 
 def score_gu(network, train_loader, device, args):
     data_iter = iter(train_loader)
-    x, target = next(data_iterator)
-    noise = x.new(x.size()).normal(0, args.sigma)
+    x, target = next(data_iter)
+    x, target = x.to(device), target.to(device)
+
+    noise = x.new(x.size()).normal_(0, args.sigma).to(device)
     x2 = x + noise
-    o = network(x)
-    o_ = network(x2)
-    o = o.cpu().numpy()
-    o_ = o_.cpu().numpy()
-    return np.sum(np.square(o-o_))
+
+    o, _ = network(x)
+    o_, _ = network(x2)
+    o = o.detach().cpu().numpy()
+    o_ = o_.detach().cpu().numpy()
+    return -np.sum(np.square(o-o_))
 
 def scores(network, train_loader, device, stds, means, args):
     scoreNAS = score_nas(network, train_loader, device, args)
