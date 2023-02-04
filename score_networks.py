@@ -9,11 +9,11 @@ from scores import get_score_func
 from scipy import stats
 from pycls.models.nas.nas import Cell
 from utils import add_dropout, init_network
-import scores.score_
+import score.net_score
 
 parser = argparse.ArgumentParser(description='NAS Without Training')
 parser.add_argument('--data_loc', default='../cifardata/', type=str, help='dataset folder')
-parser.add_argument('--api_loc', default='../NAS-Bench-201-v1_0-e61699.pth',
+parser.add_argument('--api_loc', default='../NAS-Bench-201.pth',
                     type=str, help='path to API')
 parser.add_argument('--save_loc', default='results', type=str, help='folder to save results')
 parser.add_argument('--save_string', default='naswot', type=str, help='prefix of results file')
@@ -104,7 +104,7 @@ means = {"nas": calmean(scores_nas), "gu": calmean(scores_gu)}
 for i, (uid, network) in enumerate(searchspace):
     # Reproducibility
     try:
-        scores[i] = score_.socres(network, train_loader, device, stds, means, args)
+        scores[i] = net_score.socres(network, train_loader, device, stds, means, args)
         accs[i] = searchspace.get_final_accuracy(uid, acc_type, args.trainval)
         accs_ = accs[~np.isnan(scores)]
         scores_ = scores[~np.isnan(scores)]
