@@ -9,9 +9,10 @@ class chromosome():
         self.uid = 0
 
 class GA():
-    def __init__(self, MAXN_POPULATION, MAXN_ITERATION, MAXN_CONNECTION, MAXN_OPERATION, searchspace, device, stds, means, acc_type, args):
-        self.MAXN_POPULATION = MAXN_POPULATION
-        self.MAXN_ITERATION = MAXN_ITERATOPN
+    def __init__(self, MAXN_CONNECTION, MAXN_OPERATION, searchspace, device, stds, means, acc_type, args):
+        self.MAXN_POPULATION = args.maxn_pop
+        self.MAXN_ITERATION = args.maxn_iter
+        self.PROB_MUTATION = args.prob_mut
         self.MAXN_CONNECTION = MAXN_CONNECTION
         self.MAXN_OPERATION = MAXN_OPERATION
         self.DICT = {}
@@ -43,7 +44,9 @@ class GA():
             else:
                 self.population[i].fitness = self.DICT[self.population[i].gene]
             if self.population[i].fitness > self.best_chrom.fitness or self.best_chrom.gene == "":
-                self.best_chrom.fitness = self.popultation[i].fitness
+                self.best_chrom.fitness = self.population[i].fitness
+                self.best_chrom.acc = self.population[i].acc
+                self.best_chrom.uid = self.population[i].uid
                 self.best_chrom.gene = copy.deepcopy(self.population[i].gene)
 
     def mutation(self, chrom):
@@ -67,7 +70,7 @@ class GA():
                 smaxi = chrom
         return maxi, smaxi
     
-    def run(self):
+    def find_best(self):
         self.init_population()
         self.evaluate()
         for _ in range(self.MAXN_ITERATION):
@@ -84,6 +87,7 @@ class GA():
             self.population.sort(key = lambda chrom: chrom.fitness, reverse = True)
             self.population = self.population[:self.MAXN_POPULATION]
         network, uid, acc = gene2net(self.best_chrom.gene, self.ops, self.searchspace, self.acc_type, self.args)
+        return self.best_chrom.fitness, uid, acc
 
 def gene2sect(gene, ops):
     gene_sect_len = len(ops)
