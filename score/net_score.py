@@ -60,9 +60,6 @@ def score_nas(network, train_loader, device, args):
                 module.register_backward_hook(counting_backward_hook)    
 
     network = network.to(device)    
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
     s = []
 
     data_iterator = iter(train_loader)
