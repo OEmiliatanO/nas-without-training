@@ -17,9 +17,10 @@ from score import net_score
 
 parser = argparse.ArgumentParser(description='NAS Without Training')
 
-parser.add_argument('--maxn_pop', default=20, type=int, help='number of population')
+parser.add_argument('--maxn_pop', default=30, type=int, help='number of population')
 parser.add_argument('--maxn_iter', default=50, type=int, help='number of iteration')
-parser.add_argument('--prob_mut', default=0.08, type=float, help='probability of mutation')
+parser.add_argument('--prob_mut', default=0.07, type=float, help='probability of mutation')
+parser.add_argument('--prob_cr', default=0.8, type = float, help='probability of crossover')
 
 parser.add_argument('--data_loc', default='../cifardata/', type=str, help='dataset folder')
 parser.add_argument('--api_loc', default='../NAS-Bench-201.pth',
@@ -95,9 +96,12 @@ calmean = lambda x: np.ma.masked_invalid(x).mean()
 stds = {"nas": calstd(scores_nas), "gu": calstd(scores_gu)}
 means = {"nas": calmean(scores_nas), "gu": calmean(scores_gu)}
 
-runs = trange(args.n_runs, desc='acc: ')
+print(f"parameter:\nnumber of population={args.maxn_pop}\nnumber of iteration={args.maxn_iter}\nprobability of mutation={args.prob_mut}\nprobability of crossover={args.prob_cr}")
+
+runs = trange(args.n_runs, desc='acc: nan  topscores: nan')
 for N in runs:
     start = time.time()
+
     # nas-bench-201 spec
     sol = GA.GA(6, 5, searchspace, train_loader, device, stds, means, acc_type, args)
     score, acc_, uid = sol.find_best()
@@ -110,7 +114,7 @@ for N in runs:
     #    val_acc.append(info.get_metrics(dset, val_acc_type)['accuracy'])
 
     times.append(time.time()-start)
-    runs.set_description(f"acc: {mean(acc):.2f}%  score:{mean(topscores):.2f}  time:{mean(times):.2f}")
+    runs.set_description(f"acc: {mean(acc):.2f}%  topscores:{mean(topscores):.2f}  time:{mean(times):.2f}")
 
 print(f"Final mean test accuracy: {np.mean(acc)}")
 #if len(val_acc) > 1:
