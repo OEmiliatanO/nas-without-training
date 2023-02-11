@@ -5,13 +5,13 @@ import random
 import numpy as np
 import torch
 import os
-import time
-from tqdm import tqdm, trange
 from scores import get_score_func
 from scipy import stats
 from pycls.models.nas.nas import Cell
 from utils import add_dropout, init_network
-from score import net_score
+from score import ninaswot_score
+from tqdm import tqdm, trange
+import time
 from statistics import mean
 
 parser = argparse.ArgumentParser(description='NAS Without Training')
@@ -94,8 +94,8 @@ arches = np.random.randint(0, 15625, 100)
 for arch in arches:
     uid = searchspace[arch]
     network = searchspace.get_network(uid)
-    scores_nas.append(net_score.score_nas(network, train_loader, device, args))
-    scores_gu.append(net_score.score_gu(network, train_loader, device, args))
+    scores_nas.append(ninaswot_score.score_nas(network, train_loader, device, args))
+    scores_gu.append(ninaswot_score.score_gu(network, train_loader, device, args))
 
 scores_nas = np.array(scores_nas)
 scores_gu = np.array(scores_gu)
@@ -110,7 +110,7 @@ times = []
 for i, (uid, network) in enumerate(searchspace):
     st = time.time()
     try:
-        scores[i] = net_score.scores(network, train_loader, device, stds, means, args)
+        scores[i] = ninaswot_score.scores(network, train_loader, device, stds, means, args)
         accs[i] = searchspace.get_final_accuracy(uid, acc_type, args.trainval)
         accs_ = accs[~np.isnan(scores)]
         scores_ = scores[~np.isnan(scores)]
@@ -127,6 +127,6 @@ for i, (uid, network) in enumerate(searchspace):
     times.append(time.time()-st)
     nruns.set_description(f"time = {mean(times)}")
     nruns.update(1)
-
+    
 np.save(filename, scores)
 np.save(accfilename, accs)
